@@ -229,3 +229,74 @@ MATRIX CreateCustomMatrix(size_t rowSize, size_t colSize)
     m.matrix_type = CUSTOM;
     return m;
 }
+
+
+MATRIX __transpose_row(MATRIX* m)
+{
+    size_t row_size = m->cols;
+    MATRIX res = CreateVectorCol(row_size);
+    for (size_t i = 0; i < row_size; ++i)
+    {
+        res.content[i][0] = m->content[0][i];
+    }
+    return res;
+}
+
+MATRIX __transpose_col(MATRIX* m)
+{
+    size_t col_size = m->rows;
+    MATRIX res = CreateVectorRow(col_size);
+    for (size_t i = 0; i < col_size; ++i)
+    {
+        res.content[0][i]=m->content[i][0];
+    }
+    return res;
+}
+
+MATRIX __transpose_bidimensional(MATRIX* m)
+{
+    if (m->matrix_type == IDENTITY)
+    {
+        return CreateIdentity(m->cols);
+    }
+
+    size_t row_size = m->cols;
+    size_t col_size = m->rows;
+
+    MATRIX res = CreateCustomMatrix(row_size, col_size);
+    for (size_t i = 0; i < row_size; ++i)
+    {
+        for (size_t k = 0; k < col_size; ++k)
+        {
+            res.content[i][k] = m->content[k][i];
+        }
+    }
+
+    return res;
+}
+
+MATRIX Transpose(MATRIX* matrix, bool consumeAfter)
+{
+    MATRIX res;
+    if (matrix->matrix_type == VECTOR_ROW)
+    {
+        res = __transpose_row(matrix);
+    }
+
+    else if (matrix->matrix_type == VECTOR_COL)
+    {
+        res = __transpose_col(matrix);
+    }
+
+    else 
+    {
+        res = __transpose_bidimensional(matrix); 
+    }
+
+    if (consumeAfter)
+    {
+        Deallocate(matrix);
+    }
+
+    return res;
+}
