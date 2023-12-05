@@ -2,3 +2,4 @@ main.c
 Makefile
 *.o
 matriCs
+.vscode
