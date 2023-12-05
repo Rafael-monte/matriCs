@@ -99,8 +99,9 @@ void __print_vector_row(MATRIX* m)
     printf("[ ");
     for (size_t i = 0; i < m->cols; ++i)
     {
-        printf(i == m->cols - 1? "%.2lf ]": "%.2lf, ", m->content[i][0]);
+        printf(i == m->cols - 1? "%.2lf ]\n": "%.2lf, ", m->content[0][i]);
     }
+
 }
 
 void __print_bidimensional_matrix(MATRIX* m)
@@ -230,7 +231,6 @@ MATRIX CreateCustomMatrix(size_t rowSize, size_t colSize)
     return m;
 }
 
-
 MATRIX __transpose_row(MATRIX* m)
 {
     size_t row_size = m->cols;
@@ -275,6 +275,21 @@ MATRIX __transpose_bidimensional(MATRIX* m)
     return res;
 }
 
+/*
+    Transposes a given matrix.
+    i.e:
+    Given a matrix like:
+    [
+        [1, 0, 0]
+        [2, 5, 3]
+    ]
+    Returns the matrix:
+    [
+        [1, 2]
+        [0, 5]
+        [3, 0]
+    ]
+*/
 MATRIX Transpose(MATRIX* matrix, bool consumeAfter)
 {
     MATRIX res;
