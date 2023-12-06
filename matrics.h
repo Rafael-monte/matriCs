@@ -15,6 +15,14 @@
     #define DEFAULT_VEC_COL_C_SIZE 1
 #endif
 
+#ifndef NEGATIVE_LENGTH_TRAP 
+    #define NEGATIVE_LENGTH_TRAP 10000000
+#endif
+
+#ifndef MAX_ALLOC_SIZE 
+    #define MAX_ALLOC_SIZE 10000000
+#endif
+
 typedef enum M_TYPE {
     IDENTITY = 0,
     CUSTOM = 1,
@@ -22,6 +30,10 @@ typedef enum M_TYPE {
     VECTOR_COL = 3
 } M_TYPE;
 
+typedef enum INSERTION_STATUS {
+    INSERTION_SUCCEED = 1,
+    INSERTION_FAILED = 0
+} INSERTION_STATUS;
 
 typedef struct MATRIX {
     double** content;
@@ -29,6 +41,15 @@ typedef struct MATRIX {
     size_t cols;
     M_TYPE matrix_type;
 } MATRIX;
+
+void __check_size(size_t size)
+{
+    if (size <= 0 || size > NEGATIVE_LENGTH_TRAP)
+    {
+        fprintf(stderr, "Invalid value provided: \"%ld\". Please, give a number that is bigger than 0\n", size);
+        exit(EXIT_FAILURE);
+    }
+}
 
 /* 
     Creates a identity (I) matrix given the scale of it.
@@ -43,10 +64,12 @@ typedef struct MATRIX {
 */
 MATRIX CreateIdentity(const size_t scale)
 {
+    __check_size(scale);
     double **m_content = (double **) malloc(sizeof(double) * scale);
     if (!m_content) 
     {
         fprintf(stderr, "Cannot allocate matrix content.\n");
+        exit(EXIT_FAILURE);
     }
     for (size_t i = 0; i < scale; ++i)
     {
@@ -54,6 +77,7 @@ MATRIX CreateIdentity(const size_t scale)
         if (!m_content[i]) 
         {
             fprintf(stderr, "Cannot allocate matrix content.\n");
+            exit(EXIT_FAILURE);
         }
         m_content[i][i] = 1.0;
     }
@@ -64,6 +88,7 @@ MATRIX CreateIdentity(const size_t scale)
     res.matrix_type = IDENTITY;
     return res;
 }
+
 
 /*
     Deallocates the matrix content from heap.
@@ -154,6 +179,7 @@ void PrintMatrix(MATRIX *matrix, bool consumeAfter)
 */
 MATRIX CreateVectorRow(size_t rowSize)
 {
+    __check_size(rowSize);
     double** row = (double **) malloc(sizeof(double *));
     for (size_t i = 0; i < rowSize; ++i)
     {
@@ -184,6 +210,7 @@ MATRIX CreateVectorRow(size_t rowSize)
 */
 MATRIX CreateVectorCol(size_t colSize)
 {
+    __check_size(colSize);
     double** rows = (double **) malloc(sizeof(double *) * colSize);
 
     for (size_t i = 0; i < colSize; ++i)
@@ -213,6 +240,8 @@ MATRIX CreateVectorCol(size_t colSize)
 */
 MATRIX CreateCustomMatrix(size_t rowSize, size_t colSize)
 {
+    __check_size(rowSize);
+    __check_size(colSize);
     double** row = (double **) malloc(sizeof(double *) * rowSize);
     for (size_t i = 0; i < rowSize; ++i)
     {
@@ -314,4 +343,34 @@ MATRIX Transpose(MATRIX* matrix, bool consumeAfter)
     }
 
     return res;
+}
+
+/*
+    Insert content in matrix at desired position.
+    Returns INSERTION_SUCCEED if the value of matrix at row and col was been replaced, INSERCTION_FAILED otherwise.
+    i.e:
+    MATRIX m = CreateVectorRow(3);
+    InsertInMatrix(&m, 0, 2, 3.0);
+    PrintMatrix(&m, true);
+    The result will be:
+    [ 0.00, 0.00, 3.00 ]
+*/
+INSERTION_STATUS InsertInMatrix(MATRIX* m, size_t row, size_t col, double value)
+{
+    if (m->content == NULL)
+    {
+        return INSERTION_FAILED;
+    }
+
+    if (row > m->rows || col > m->cols)
+    {
+        return INSERTION_FAILED;
+    }
+
+    m->content[row][col]=value;
+    if (m->matrix_type == IDENTITY)
+    {
+        m->matrix_type=CUSTOM;
+    }
+    return INSERTION_SUCCEED; 
 }
