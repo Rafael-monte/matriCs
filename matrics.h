@@ -318,6 +318,8 @@ MATRIX __transpose_bidimensional(MATRIX* m)
         [0, 5]
         [3, 0]
     ]
+
+    The 'consumeAfter' param means if the matrix should be deallocated after the operation succeed.
 */
 MATRIX Transpose(MATRIX* matrix, bool consumeAfter)
 {
