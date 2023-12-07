@@ -27,13 +27,14 @@ typedef enum M_TYPE {
     IDENTITY = 0,
     CUSTOM = 1,
     VECTOR_ROW = 2,
-    VECTOR_COL = 3
+    VECTOR_COL = 3,
+    ERROR = -1,
 } M_TYPE;
 
-typedef enum INSERTION_STATUS {
-    INSERTION_SUCCEED = 1,
-    INSERTION_FAILED = 0
-} INSERTION_STATUS;
+typedef enum OPERATION_STATUS {
+    SUCCEED = 1,
+    FAILED = 0
+} OPERATION_STATUS;
 
 typedef struct MATRIX {
     double** content;
@@ -49,6 +50,16 @@ void __check_size(size_t size)
         fprintf(stderr, "Invalid value provided: \"%ld\". Please, give a number that is bigger than 0\n", size);
         exit(EXIT_FAILURE);
     }
+}
+
+MATRIX __create_err_matrix()
+{
+    MATRIX res;
+    res.content=NULL;
+    res.matrix_type=ERROR;
+    res.rows=0;
+    res.cols=0;
+    return res;
 }
 
 /* 
@@ -69,7 +80,7 @@ MATRIX CreateIdentity(const size_t scale)
     if (!m_content) 
     {
         fprintf(stderr, "Cannot allocate matrix content.\n");
-        exit(EXIT_FAILURE);
+        return __create_err_matrix();
     }
     for (size_t i = 0; i < scale; ++i)
     {
@@ -77,7 +88,7 @@ MATRIX CreateIdentity(const size_t scale)
         if (!m_content[i]) 
         {
             fprintf(stderr, "Cannot allocate matrix content.\n");
-            exit(EXIT_FAILURE);
+            return __create_err_matrix();
         }
         m_content[i][i] = 1.0;
     }
@@ -161,6 +172,9 @@ void PrintMatrix(MATRIX *matrix, bool consumeAfter)
         case CUSTOM:
         case IDENTITY:
             __print_bidimensional_matrix(matrix);
+            break;
+        default:
+            fprintf(stderr, "WARN: ERROR matrix tried to be printed.\n");
             break;
     }
     if (consumeAfter)
@@ -304,6 +318,7 @@ MATRIX __transpose_bidimensional(MATRIX* m)
     return res;
 }
 
+
 /*
     Transposes a given matrix.
     i.e:
@@ -349,7 +364,7 @@ MATRIX Transpose(MATRIX* matrix, bool consumeAfter)
 
 /*
     Insert content in matrix at desired position.
-    Returns INSERTION_SUCCEED if the value of matrix at row and col was been replaced, INSERCTION_FAILED otherwise.
+    Returns SUCCEED if the value of matrix at row and col was been replaced, FAILED otherwise.
     i.e:
     MATRIX m = CreateVectorRow(3);
     InsertInMatrix(&m, 0, 2, 3.0);
@@ -357,16 +372,16 @@ MATRIX Transpose(MATRIX* matrix, bool consumeAfter)
     The result will be:
     [ 0.00, 0.00, 3.00 ]
 */
-INSERTION_STATUS InsertInMatrix(MATRIX* m, size_t row, size_t col, double value)
+OPERATION_STATUS InsertInMatrix(MATRIX* m, size_t row, size_t col, double value)
 {
     if (m->content == NULL)
     {
-        return INSERTION_FAILED;
+        return FAILED;
     }
 
     if (row > m->rows || col > m->cols)
     {
-        return INSERTION_FAILED;
+        return FAILED;
     }
 
     m->content[row][col]=value;
@@ -374,5 +389,34 @@ INSERTION_STATUS InsertInMatrix(MATRIX* m, size_t row, size_t col, double value)
     {
         m->matrix_type=CUSTOM;
     }
-    return INSERTION_SUCCEED; 
+    return SUCCEED; 
 }
+
+MATRIX GetRows(MATRIX* m, size_t* rows, size_t numOfRows, bool consumeAfter)
+{
+    if (numOfRows > m->rows)
+    {
+        fprintf(stderr, "ERROR: The number of rows is bigger than the matrix row_size\n");
+        return __create_err_matrix();
+    }
+    for (size_t i = 0; i < numOfRows; ++i)
+    {
+        if (rows[i] > (m->rows - 1))
+        {
+            fprintf(stderr, "ERROR: The row index \"%ld\" is invalid. Aborting.\n", rows[i]);
+            __create_err_matrix();
+        }
+    }
+
+    MATRIX res = CreateCustomMatrix(numOfRows, m->cols);
+    for (size_t row = 0; row < numOfRows; ++row)
+    {
+        memcpy(res.content[row], m->content[rows[row]], sizeof(double *) * m->cols); 
+    }
+    if (consumeAfter)
+    {
+        Deallocate(m);
+    }
+    return res;
+}
+
